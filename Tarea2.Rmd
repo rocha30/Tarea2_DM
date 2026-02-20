@@ -1,0 +1,735 @@
+---
+title: "Tarea2"
+author: "Mario Rocha - 23501"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,      # NO muestra código
+  message = FALSE,   # NO muestra mensajes
+  warning = FALSE    # NO muestra warnings
+)
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(Rtsne)
+library(umap)
+library(fastICA)
+```
+
+
+---
+
+## 📌 Cargar dataset MovieLens
+
+```{r carga_datos}
+ratings <- read.table("data/u.data",
+                      sep = "\t",
+                      header = FALSE,
+                      col.names = c("user_id", "item_id", "rating", "timestamp"))
+
+head(ratings)
+
+```
+
+
+---
+
+## Dimensiones del dataset
+
+```{r dimensiones}
+dim(ratings)
+length(unique(ratings$user_id))   # número de usuarios
+length(unique(ratings$item_id))   # número de películas
+
+```
+
+
+---
+
+## Crear matriz usuario × película
+
+
+```{r matriz}
+ratings_matrix <- ratings %>%
+  select(user_id, item_id, rating) %>%
+  pivot_wider(names_from = item_id,
+              values_from = rating,
+              values_fill = 0)
+
+# Convertir a matriz numérica
+ratings_matrix <- as.matrix(ratings_matrix[,-1])
+
+dim(ratings_matrix)
+
+```
+
+
+
+---
+
+## Aplicar SVD
+
+
+```{r svd}
+svd_result <- svd(ratings_matrix)
+
+# Valores singulares
+singular_values <- svd_result$d
+
+head(singular_values)
+
+```
+
+
+---
+
+## Graficar valores singulares
+
+
+```{r grafico_svd}
+plot(singular_values[1:50],
+     type="b",
+     main="Primeros 50 valores singulares",
+     xlab="Componente",
+     ylab="Valor singular")
+
+
+```
+
+---
+
+## Varianza explicada
+
+
+```{r varianza}
+var_explained <- singular_values^2 / sum(singular_values^2)
+
+plot(cumsum(var_explained[1:50]),
+     type="b",
+     main="Varianza acumulada explicada",
+     xlab="Número de componentes",
+     ylab="Varianza acumulada")
+     
+```
+
+
+---
+
+## Reducción a k dimensiones (ejemplo k = 20)
+
+
+```{r reduccion}
+k <- 20
+
+U_k <- svd_result$u[,1:k]
+D_k <- diag(svd_result$d[1:k])
+V_k <- svd_result$v[,1:k]
+
+# Reconstrucción aproximada
+approx_matrix <- U_k %*% D_k %*% t(V_k)
+
+dim(approx_matrix)
+
+```
+
+
+---
+
+### Interpretación de resultados
+
+Al aplicar SVD sobre la matriz usuario-película, se obtuvo una descomposición en tres matrices (U, D y V), donde los valores singulares representan la importancia de cada componente latente.
+
+El gráfico de valores singulares muestra que los primeros componentes concentran la mayor parte de la información del sistema. La gráfica de varianza acumulada indica que con un número reducido de componentes (aproximadamente 15–25) se puede explicar un alto porcentaje de la variabilidad total.
+
+Esto demuestra que el sistema de calificaciones puede representarse en un espacio de menor dimensión, lo cual es fundamental en sistemas de recomendación, ya que permite identificar factores latentes como:
+
+- Preferencias de género
+- Tendencias de los usuarios
+- Popularidad implícita de películas
+
+La reducción a k = 20 componentes permite reconstruir una aproximación de la matriz original, conservando la mayor parte de la información relevante, pero reduciendo considerablemente la dimensionalidad.
+
+---
+
+
+#### 2.1 SVD (Singular Value Decomposition)
+
+***Descripción teórica***
+
+La Descomposición en Valores Singulares (SVD) es una técnica de álgebra lineal que permite factorizar una matriz A en el producto de tres matrices:
+
+A = UDV^T
+
+donde:
+	•	U contiene los vectores singulares izquierdos.
+	•	D es una matriz diagonal con los valores singulares.
+	•	V contiene los vectores singulares derechos.
+
+El objetivo principal de SVD dentro del aprendizaje no supervisado es reducir dimensionalidad y extraer factores latentes que expliquen la estructura interna de los datos.
+
+A diferencia de PCA, que se basa en la matriz de covarianza, SVD puede aplicarse directamente sobre cualquier matriz rectangular, incluso si no está centrada.
+
+***Características principales***
+	•	Permite reducción de dimensionalidad.
+	•	Identifica patrones latentes.
+	•	No requiere variable objetivo.
+	•	Es base matemática de PCA.
+	•	Se utiliza ampliamente en sistemas de recomendación.
+
+***Diferencias con PCA***
+	•	PCA trabaja sobre la matriz de covarianza.
+	•	SVD trabaja directamente sobre la matriz original.
+	•	PCA requiere centrar los datos.
+	•	SVD no necesariamente requiere centrado.
+	•	En sistemas de recomendación, SVD es más común.
+	
+	
+	
+	### Usos y aplicaciones 
+	
+	Usos y aplicaciones
+
+SVD se utiliza principalmente en:
+	1.	***Sistemas de recomendación***
+	•	Identificación de preferencias latentes de usuarios.
+	•	Predicción de calificaciones faltantes.
+	2.	***Reducción de dimensionalidad***
+	•	Compresión de información.
+	•	Visualización de datos en espacios de menor dimensión.
+	3.	***Procesamiento de texto***
+	•	Análisis semántico latente (LSA).
+	4.	***Compresión de imágenes***
+	•	Eliminación de ruido y almacenamiento eficiente.
+
+SVD es adecuado para estos problemas porque permite representar grandes matrices en un espacio reducido conservando la mayor parte de la información.
+
+
+### Dataset utilizado
+
+Se utilizó el dataset MovieLens 100K, que contiene 100,000 calificaciones de películas realizadas por 943 usuarios sobre 1682 películas.
+
+El dataset incluye:
+	•	user_id
+	•	item_id
+	•	rating
+	•	timestamp
+
+Para aplicar SVD, se construyó una matriz usuario × película donde los valores representan las calificaciones otorgadas.
+
+
+
+
+## 2.2 t-SNE
+
+```{r setup_tsne, message=FALSE, warning=FALSE}
+library(Rtsne)
+library(ggplot2)
+library(dplyr)
+```
+
+---
+
+## Cargar dataset Breast Cancer
+
+
+```{r carga_cancer}
+cancer <- read.csv("data/data.csv")
+
+head(cancer)
+dim(cancer)
+```
+---
+
+## Limpieza de datos
+
+Quitamos columnas innecesarias:
+
+- id
+- X (si aparece una columna vacía al final)
+
+
+```{r limpieza}
+cancer <- cancer %>%
+  select(-id)
+
+# eliminar columna vacía si existe
+cancer <- cancer[, colSums(is.na(cancer)) < nrow(cancer)]
+
+# Variable diagnóstico
+diagnosis <- cancer$diagnosis
+
+# Quitar diagnosis para aplicar t-SNE
+cancer_numeric <- cancer %>%
+  select(-diagnosis)
+
+dim(cancer_numeric)
+
+```
+
+## Escalar los datos 
+```{r escalado}
+cancer_scaled <- scale(cancer_numeric)
+
+```
+
+---
+
+##  Aplicar t-SNE
+
+
+```{r tsne}
+set.seed(123)
+
+tsne_model <- Rtsne(cancer_scaled,
+                    dims = 2,
+                    perplexity = 30,
+                    verbose = TRUE,
+                    max_iter = 500)
+
+tsne_data <- data.frame(
+  Dim1 = tsne_model$Y[,1],
+  Dim2 = tsne_model$Y[,2],
+  Diagnosis = diagnosis
+)
+
+head(tsne_data)
+```
+---
+
+## Graficar resultados
+
+
+```{r grafico_tsne}
+ggplot(tsne_data, aes(x = Dim1, y = Dim2, color = Diagnosis)) +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(title = "t-SNE - Breast Cancer Dataset",
+       x = "Dimensión 1",
+       y = "Dimensión 2") +
+  theme_minimal()
+
+```
+
+
+
+---
+
+### Interpretación de resultados
+
+El algoritmo t-SNE permitió reducir las 30 variables originales del dataset a un espacio bidimensional.
+
+En la visualización obtenida se observa una clara separación entre las observaciones diagnosticadas como malignas (M) y benignas (B). Esto indica que el dataset posee una estructura interna bien definida y que las variables contienen suficiente información para diferenciar ambas clases.
+
+A diferencia de PCA, t-SNE no busca maximizar varianza global, sino preservar la estructura local de los datos, lo que explica la formación de grupos bien definidos.
+
+El resultado confirma que t-SNE es especialmente útil para:
+
+- Visualización de datos de alta dimensión
+- Identificación de agrupamientos naturales
+- Exploración de estructuras complejas no lineales
+
+Sin embargo, t-SNE no es un método de clasificación, sino una herramienta de visualización y reducción de dimensionalidad no lineal.
+
+---
+
+
+---
+
+## 2.2 t-SNE (t-Distributed Stochastic Neighbor Embedding)
+
+### Descripción teórica
+
+t-SNE es un algoritmo de reducción de dimensionalidad no lineal diseñado principalmente para visualización de datos de alta dimensión.
+
+Su objetivo es preservar las relaciones de vecindad entre observaciones. Para ello:
+
+1. Convierte las distancias entre puntos en probabilidades.
+2. Minimiza la diferencia entre las distribuciones de alta dimensión y baja dimensión usando divergencia KL.
+
+A diferencia de PCA y SVD, t-SNE:
+
+- No es lineal.
+- No genera componentes interpretables.
+- Está optimizado para visualización.
+
+### Características principales
+
+- Preserva estructura local.
+- Funciona bien con datos complejos.
+- Sensible a parámetros como perplexity.
+- No mantiene estructura global con precisión.
+
+---
+
+# USOS Y APLICACIONES
+
+---
+
+### Usos y aplicaciones
+
+t-SNE se utiliza en:
+
+1. Visualización de datos biomédicos.
+2. Análisis de imágenes.
+3. Procesamiento de texto y embeddings.
+4. Exploración de clusters en datasets complejos.
+
+Es especialmente útil cuando se desea identificar agrupamientos naturales en datos con muchas variables.
+
+---
+
+
+
+### 2.3 UMAP
+
+
+
+```{r setup_umap, message=FALSE, warning=FALSE}
+library(umap)
+library(ggplot2)
+
+```
+
+## Aplicar UMAP
+
+```{r umap}
+set.seed(123)
+
+umap_model <- umap(cancer_scaled)
+
+umap_data <- data.frame(
+  Dim1 = umap_model$layout[,1],
+  Dim2 = umap_model$layout[,2],
+  Diagnosis = diagnosis
+)
+
+head(umap_data)
+
+```
+
+---
+
+##Graficar resultados
+
+
+```{r grafico_umap}
+ggplot(umap_data, aes(x = Dim1, y = Dim2, color = Diagnosis)) +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(title = "UMAP - Breast Cancer Dataset",
+       x = "Dimensión 1",
+       y = "Dimensión 2") +
+  theme_minimal()
+
+```
+
+
+
+---
+
+### Interpretación de resultados
+
+UMAP permitió reducir las 30 variables originales del dataset a dos dimensiones preservando tanto estructura local como parte de la estructura global.
+
+En la visualización se observa una separación clara entre los diagnósticos malignos (M) y benignos (B), similar a t-SNE. Sin embargo, UMAP tiende a generar agrupaciones más compactas y estructuradas.
+
+A diferencia de t-SNE, UMAP mantiene mejor la relación global entre grupos, lo cual permite observar la distancia relativa entre clusters.
+
+Esto confirma que el dataset presenta una estructura bien definida y que las variables originales contienen suficiente información para diferenciar ambos diagnósticos.
+
+---
+
+# DESCRIPCIÓN TEÓRICA 
+
+---
+
+## 2.3 UMAP (Uniform Manifold Approximation and Projection)
+
+### Descripción teórica
+
+UMAP es un algoritmo de reducción de dimensionalidad no lineal basado en teoría de variedades y topología algebraica.
+
+Su objetivo es:
+
+- Preservar estructura local.
+- Mantener parte de la estructura global.
+- Reducir dimensionalidad de forma eficiente.
+
+El algoritmo construye un grafo de vecinos más cercanos en alta dimensión y luego optimiza una representación en baja dimensión que preserve esa estructura.
+
+### Características principales
+
+- Más rápido que t-SNE.
+- Mejor preservación global.
+- Escalable a grandes datasets.
+- Sensible a parámetros como n_neighbors y min_dist.
+
+### Diferencias con t-SNE
+
+- UMAP preserva mejor estructura global.
+- UMAP es más rápido.
+- t-SNE está más enfocado exclusivamente en estructura local.
+
+---
+
+# USOS Y APLICACIONES 
+
+---
+
+### Usos y aplicaciones
+
+UMAP se utiliza en:
+
+1. Visualización de datos biomédicos.
+2. Análisis de imágenes y visión por computadora.
+3. Procesamiento de texto y embeddings.
+4. Exploración de clusters en datasets de alta dimensión.
+
+Es ampliamente utilizado en bioinformática y análisis genómico debido a su eficiencia y capacidad de preservación estructural.
+
+---
+
+
+
+### 2.4 ICA
+
+```{r setup_ica, message=FALSE, warning=FALSE}
+library(fastICA)
+library(ggplot2)
+
+```
+
+---
+
+## Simular señales mezcladas (tipo EEG)
+
+ICA se usa para separar señales mezcladas.
+
+
+```{r simular_senales}
+set.seed(123)
+
+n <- 1000
+t <- seq(0, 8, length.out = n)
+
+# Señales originales
+s1 <- sin(2 * t)              # señal senoidal
+s2 <- sign(sin(3 * t))        # señal cuadrada
+s3 <- rnorm(n)                # ruido
+
+S <- cbind(s1, s2, s3)
+
+# Matriz de mezcla
+A <- matrix(c(1, 1, 1,
+              0.5, 2, 1,
+              1.5, 1, 2), nrow=3)
+
+X <- S %*% t(A)   # señales mezcladas
+
+head(X)
+
+```
+---
+
+## Aplicar ICA
+
+
+```{r aplicar_ica}
+ica_result <- fastICA(X, n.comp = 3)
+
+# Componentes independientes estimados
+S_est <- ica_result$S
+
+head(S_est)
+
+```
+
+---
+
+##  Graficar señales originales vs recuperadas
+
+
+```{r graficos_ica}
+par(mfrow=c(3,1))
+plot(s1, type="l", main="Señal Original 1")
+plot(S_est[,1], type="l", main="Componente Independiente 1")
+
+par(mfrow=c(1,1))
+
+
+```
+
+---
+
+# INTERPRETACIÓN 
+
+---
+
+### Interpretación de resultados
+
+El algoritmo ICA permitió separar las señales mezcladas en componentes estadísticamente independientes.
+
+A diferencia de PCA o SVD, ICA no busca maximizar varianza sino maximizar independencia estadística entre componentes.
+
+En el experimento se generaron tres señales independientes que fueron mezcladas linealmente. ICA logró recuperar componentes similares a las señales originales, demostrando su capacidad para separar fuentes ocultas.
+
+Este tipo de técnica es ampliamente utilizada en:
+
+- Análisis de señales EEG
+- Eliminación de artefactos en señales biomédicas
+- Separación de voz en procesamiento de audio
+
+ICA es especialmente útil cuando se asume que las señales observadas son combinaciones lineales de fuentes independientes.
+
+---
+
+#  DESCRIPCIÓN TEÓRICA 
+
+---
+
+## 2.4 ICA (Independent Component Analysis)
+
+### Descripción teórica
+
+ICA es un algoritmo de separación de fuentes que busca encontrar componentes estadísticamente independientes a partir de señales observadas.
+
+El modelo matemático asume:
+
+$begin:math:display$
+X \= AS
+$end:math:display$
+
+donde:
+
+- X son las señales observadas
+- A es la matriz de mezcla desconocida
+- S son las fuentes independientes
+
+El objetivo de ICA es estimar S a partir de X sin conocer A.
+
+### Características principales
+
+- Busca independencia estadística.
+- Funciona mejor cuando las señales no son gaussianas.
+- Es un método no supervisado.
+- Muy utilizado en procesamiento de señales.
+
+### Diferencias con PCA
+
+- PCA maximiza varianza.
+- ICA maximiza independencia.
+- PCA produce componentes ortogonales.
+- ICA produce componentes estadísticamente independientes.
+
+---
+
+
+
+ ### ***Comparación general entre algoritmos***
+
+Pega esto como texto en tu informe:
+
+⸻
+
+3. Comparación general entre algoritmos
+
+Los cuatro algoritmos analizados pertenecen al aprendizaje no supervisado, pero tienen objetivos y aplicaciones distintas.
+
+SVD
+
+SVD es un método lineal basado en álgebra lineal que permite descomponer matrices y reducir dimensionalidad. Es especialmente útil en sistemas de recomendación y análisis de factores latentes. Preserva la estructura global de los datos y permite reconstrucción aproximada de la matriz original.
+
+Ventajas:
+	•	Base matemática sólida.
+	•	Permite reconstrucción.
+	•	Interpretación clara de valores singulares.
+
+Limitaciones:
+	•	Método lineal.
+	•	No captura relaciones no lineales complejas.
+
+⸻
+
+t-SNE
+
+t-SNE es un método no lineal enfocado en visualización. Preserva principalmente la estructura local de los datos.
+
+Ventajas:
+	•	Excelente para visualización.
+	•	Detecta clusters complejos.
+	•	Funciona bien con alta dimensionalidad.
+
+Limitaciones:
+	•	No preserva bien estructura global.
+	•	Sensible a parámetros.
+	•	No permite reconstrucción.
+
+⸻
+
+UMAP
+
+UMAP también es un método no lineal, pero preserva tanto estructura local como parte de la global.
+
+Ventajas:
+	•	Más rápido que t-SNE.
+	•	Mejor preservación global.
+	•	Escalable a datasets grandes.
+
+Limitaciones:
+	•	Sensible a parámetros.
+	•	No produce componentes interpretables.
+
+⸻
+
+ICA
+
+ICA es un método de separación de fuentes que busca independencia estadística entre componentes.
+
+Ventajas:
+	•	Ideal para señales biomédicas.
+	•	Permite separar fuentes ocultas.
+	•	Muy útil en procesamiento de señales.
+
+Limitaciones:
+	•	Requiere supuestos de independencia.
+	•	Sensible a ruido.
+	•	No está diseñado principalmente para visualización.
+
+⸻
+
+```{r tabla_comparacion, echo=FALSE}
+tabla <- data.frame(
+  Algoritmo = c("SVD", "t-SNE", "UMAP", "ICA"),
+  Tipo = c("Factorización", "Reducción", "Reducción", "Separación"),
+  Naturaleza = c("Lineal", "No lineal", "No lineal", "Lineal (estadístico)"),
+  Objetivo = c("Reducción y recomendación",
+               "Visualización",
+               "Visualización eficiente",
+               "Separar fuentes independientes")
+)
+
+knitr::kable(tabla, caption = "Comparación entre algoritmos")
+
+```
+
+
+### ***Conclusiones***
+
+En esta investigación se analizaron y aplicaron cuatro algoritmos fundamentales de aprendizaje no supervisado: SVD, t-SNE, UMAP e ICA.
+
+Se observó que los métodos lineales como SVD permiten identificar factores latentes y reducir dimensionalidad de forma estructurada, siendo especialmente útiles en sistemas de recomendación.
+
+Por otro lado, los métodos no lineales como t-SNE y UMAP demostraron ser herramientas poderosas para la visualización de datos de alta dimensión, permitiendo identificar agrupamientos naturales en el dataset de cáncer de mama.
+
+Finalmente, ICA mostró su utilidad en la separación de señales biomédicas, destacando su importancia en aplicaciones como EEG y procesamiento de audio.
+
+Uno de los principales aprendizajes fue comprender que no todos los algoritmos de reducción de dimensionalidad cumplen el mismo propósito; algunos priorizan varianza global, otros estructura local, y otros independencia estadística.
+
+Entre las dificultades encontradas se incluyen la selección adecuada de parámetros y la interpretación correcta de las representaciones obtenidas.
+
+En general, esta actividad permitió comprender la importancia del aprendizaje no supervisado en el análisis moderno de datos y su aplicación en problemas reales.
+
+
+
+
+
