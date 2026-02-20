@@ -19,9 +19,27 @@ library(fastICA)
 ```
 
 
+# Introducción
+
+El aprendizaje no supervisado es una rama fundamental de la minería de datos y el aprendizaje automático que se enfoca en descubrir estructuras ocultas dentro de los datos sin utilizar etiquetas o variables objetivo. A diferencia del aprendizaje supervisado, donde existe una variable de respuesta conocida, en el aprendizaje no supervisado el objetivo principal es identificar patrones, agrupamientos, factores latentes o relaciones internas entre las observaciones.
+
+En el análisis moderno de datos, estos métodos son especialmente relevantes debido al crecimiento exponencial en la cantidad y dimensionalidad de la información disponible. Muchas veces los datasets contienen decenas, cientos o miles de variables, lo que dificulta su interpretación directa. Por ello, técnicas como la reducción de dimensionalidad y la extracción de características se han convertido en herramientas esenciales.
+
+El presente trabajo tiene como objetivo analizar, comprender y aplicar cuatro algoritmos fundamentales de aprendizaje no supervisado:
+
+- SVD (Singular Value Decomposition)
+- t-SNE (t-Distributed Stochastic Neighbor Embedding)
+- UMAP (Uniform Manifold Approximation and Projection)
+- ICA (Independent Component Analysis)
+
+Para cada uno de estos algoritmos se desarrolló una descripción teórica, se identificaron sus principales usos y aplicaciones, y se implementó una aplicación práctica utilizando conjuntos de datos reales o simulados. Asimismo, se realizó un análisis crítico de los resultados obtenidos con el fin de comprender sus ventajas, limitaciones y diferencias conceptuales.
+
+A través de esta actividad se busca fortalecer la comprensión de cómo distintas técnicas no supervisadas pueden abordar problemas de reducción de dimensionalidad, visualización y separación de señales, resaltando que cada método responde a supuestos matemáticos y objetivos diferentes.
+
+
 ---
 
-## 📌 Cargar dataset MovieLens
+## Cargar dataset MovieLens
 
 ```{r carga_datos}
 ratings <- read.table("data/u.data",
@@ -728,6 +746,27 @@ Uno de los principales aprendizajes fue comprender que no todos los algoritmos d
 Entre las dificultades encontradas se incluyen la selección adecuada de parámetros y la interpretación correcta de las representaciones obtenidas.
 
 En general, esta actividad permitió comprender la importancia del aprendizaje no supervisado en el análisis moderno de datos y su aplicación en problemas reales.
+
+----
+# Referencias
+
+Bishop, C. M. (2006). *Pattern Recognition and Machine Learning*. Springer.
+
+Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning* (2nd ed.). Springer.
+
+Jolliffe, I. T., & Cadima, J. (2016). Principal component analysis: A review and recent developments. *Philosophical Transactions of the Royal Society A*, 374(2065).
+
+McInnes, L., Healy, J., & Melville, J. (2018). UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction. *arXiv preprint arXiv:1802.03426*.
+
+Van der Maaten, L., & Hinton, G. (2008). Visualizing data using t-SNE. *Journal of Machine Learning Research*, 9(Nov), 2579–2605.
+
+Hyvärinen, A., Karhunen, J., & Oja, E. (2001). *Independent Component Analysis*. John Wiley & Sons.
+
+GroupLens Research. (1998). MovieLens 100K Dataset. Retrieved from https://grouplens.org/datasets/movielens/100k/
+
+UCI Machine Learning Repository. Breast Cancer Wisconsin (Diagnostic) Data Set. Retrieved from https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data
+
+R Core Team. (2024). *R: A language and environment for statistical computing*. R Foundation for Statistical Computing, Vienna, Austria.
 
 
 
