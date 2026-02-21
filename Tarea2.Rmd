@@ -1,7 +1,10 @@
 ---
 title: "Tarea2"
 author: "Mario Rocha - 23501"
+        "Fabián Morales - 23267"
 ---
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -16,6 +19,8 @@ library(ggplot2)
 library(Rtsne)
 library(umap)
 library(fastICA)
+
+
 ```
 
 
@@ -510,6 +515,24 @@ Es ampliamente utilizado en bioinformática y análisis genómico debido a su ef
 
 
 ### 2.4 ICA
+### Descripción teórica
+ICA busca separar una señal observada X como mezcla lineal de fuentes independientes. Es decir, no observamos las fuentes originales directamente, sino combinaciones de ellas.
+
+A diferencia del resto, ICA busca separar señales mezcladas en fuentes estadísticamente independientes. Mientras SVD maximiza la varianza en un modelo lineal y t-SNE/UMAP preservan estructuras locales en espacios no lineales para visualización.
+
+El objetivo principal es recuperar fuentes ocultas maximizando la independencia y la no gaussianidad.
+
+### Características principales
+
+- Busca maximizar la independencia estadística entre componentes.
+- Requiere que las fuentes sean no gaussianas.
+- Es ampliamente utilizado en procesamiento de señales biomédicas y audio.
+
+# USOS Y APLICACIONES 
+
+- EEG: separar artefactos (parpadeo, movimiento).
+- ECG: Análisis de látidos.
+
 
 ```{r setup_ica, message=FALSE, warning=FALSE}
 library(fastICA)
