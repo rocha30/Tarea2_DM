@@ -3,6 +3,8 @@ title: "Tarea2"
 author: "Mario Rocha - 23501"
         "Fabián Morales - 23267"
         "Luis Pedro Lira - 23669"
+        
+github: https://github.com/rocha30/Tarea2_DM
 ---
 
 
@@ -533,6 +535,32 @@ El objetivo principal es recuperar fuentes ocultas maximizando la independencia 
 
 - EEG: separar artefactos (parpadeo, movimiento).
 - ECG: Análisis de látidos.
+
+
+### DATASET
+MIT-BIH Arrhythmia Database
+
+
+
+### Resultados 
+```{r}
+rat100 <- read.table("100.dat", sep= "\t", header = FALSE, fileEncoding = "latin1")
+rat101 <- read.table("101.dat", sep= "\t", header = FALSE, fileEncoding = "latin1")
+rat103 <- read.table("103.dat", sep= "\t", header = FALSE, fileEncoding = "latin1")
+rat106 <- read.table("106.dat", sep= "\t", header = FALSE, fileEncoding = "latin1")
+rat117 <- read.table("117.dat", sep= "\t", header = FALSE, fileEncoding = "latin1")
+
+
+head(rat100)
+head(rat101)
+head(rat103)
+head(rat106)
+head(rat117)
+
+
+
+```
+
 
 
 ```{r setup_ica, message=FALSE, warning=FALSE}
