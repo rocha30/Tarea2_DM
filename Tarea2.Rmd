@@ -2,6 +2,7 @@
 title: "Tarea2"
 author: "Mario Rocha - 23501"
         "Fabián Morales - 23267"
+        "Luis Pedro Lira - 23669"
 ---
 
 
